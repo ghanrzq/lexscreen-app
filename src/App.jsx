@@ -8,6 +8,7 @@ import GamePasanganKata from './components/GamePasanganKata';
 import GameIngatUlangi from './components/GameIngatUlangi';
 import LaporanHasil from './components/LaporanHasil';
 import HalamanMonitoring from './components/HalamanMonitoring';
+import HalamanAkun from './components/HalamanAkun';
 
 function App() {
   const [halamanAktif, setHalamanAktif] = useState('beranda');
@@ -16,9 +17,20 @@ function App() {
   const [hasilGame, setHasilGame] = useState({});
   const [sudahTersimpan, setSudahTersimpan] = useState(false);
 
+  const [akunAktif, setAkunAktif] = useState(() => {
+    try {
+      const tersimpan = localStorage.getItem('katakita_akun');
+      return tersimpan ? JSON.parse(tersimpan) : null;
+    } catch {
+      return null;
+    }
+  });
+
   const [riwayatMonitoring, setRiwayatMonitoring] = useState(() => {
     try {
-      const tersimpan = localStorage.getItem('lexscreen_riwayat');
+      const tersimpan =
+        localStorage.getItem('katakita_riwayat') ||
+        localStorage.getItem('lexscreen_riwayat');
       return tersimpan ? JSON.parse(tersimpan) : [];
     } catch {
       return [];
@@ -27,7 +39,19 @@ function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('lexscreen_riwayat', JSON.stringify(riwayatMonitoring));
+      if (akunAktif) {
+        localStorage.setItem('katakita_akun', JSON.stringify(akunAktif));
+      } else {
+        localStorage.removeItem('katakita_akun');
+      }
+    } catch {
+      // Abaikan jika storage penuh
+    }
+  }, [akunAktif]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('katakita_riwayat', JSON.stringify(riwayatMonitoring));
     } catch {
       // Abaikan jika storage penuh
     }
@@ -148,7 +172,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-sky-50 via-white to-blue-50 font-sans text-slate-800">
       {/* NAVBAR */}
-      <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+      <nav className="max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center justify-between gap-4">
         <div
           onClick={() => {
             setHalamanAktif('beranda');
@@ -158,12 +182,12 @@ function App() {
         >
           <span className="text-3xl">🧠</span>
           <span className="text-2xl font-extrabold tracking-tight text-teal-600">
-            Lex<span className="text-indigo-950">Screen</span>
+            Kata<span className="text-indigo-950">Kita</span>
           </span>
         </div>
 
-        <ul className="hidden md:flex items-center gap-8 font-semibold text-indigo-950">
-          {['Beranda', 'Informasi', 'Monitoring', 'Laporan', 'Akun'].map((menu) => (
+        <ul className="flex flex-wrap items-center gap-5 md:gap-8 font-semibold text-indigo-950 text-sm md:text-base">
+          {['Beranda', 'Informasi', 'Monitoring', 'Laporan'].map((menu) => (
             <li key={menu}>
               <button
                 onClick={() => {
@@ -180,12 +204,41 @@ function App() {
               </button>
             </li>
           ))}
+
+          {/* TOMBOL MENU AKUN DENGAN STATUS LOGIN */}
+          <li>
+            <button
+              onClick={() => {
+                setHalamanAktif('akun');
+                setGameAktif(null);
+              }}
+              className={`px-4 py-2 rounded-xl font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                akunAktif
+                  ? 'bg-teal-600 text-white shadow-xs hover:bg-teal-700'
+                  : halamanAktif === 'akun'
+                  ? 'bg-indigo-950 text-white'
+                  : 'bg-white border border-slate-200 text-indigo-950 hover:border-teal-500'
+              }`}
+            >
+              <span>
+                {akunAktif ? (akunAktif.peran === 'guru' ? '👩🏻‍🏫' : '👨🏻‍👩🏻‍👧🏻') : '👤'}
+              </span>
+              <span>
+                {akunAktif
+                  ? `${akunAktif.nama.split(' ')[0]} (${
+                      akunAktif.peran === 'guru' ? 'Guru' : 'Ortu'
+                    })`
+                  : 'Akun'}
+              </span>
+            </button>
+          </li>
         </ul>
       </nav>
 
       {/* KONDISI 1: HALAMAN FORM OBSERVASI */}
       {halamanAktif === 'observasi' && (
         <FormObservasi
+          akunAktif={akunAktif}
           onKembali={() => setHalamanAktif('beranda')}
           onSelesai={handleSelesaiObservasi}
         />
@@ -346,7 +399,7 @@ function App() {
         <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
           <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm">
             <span className="bg-sky-100 text-sky-900 text-xs font-bold px-3 py-1 rounded-full">
-              Panduan Literasi & Inklusi
+              Panduan Literasi & Inklusi KataKita
             </span>
             <h1 className="text-2xl md:text-3xl font-extrabold text-indigo-950 mt-2 mb-3">
               Mengenal Disleksia & Pendekatan Multisensori
@@ -385,25 +438,15 @@ function App() {
         </main>
       )}
 
-      {/* KONDISI 6: HALAMAN AKUN */}
+      {/* KONDISI 6: HALAMAN AKUN (LOGIN GURU / ORANG TUA) */}
       {halamanAktif === 'akun' && (
-        <main className="max-w-xl mx-auto px-6 py-12">
-          <div className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm text-center">
-            <div className="text-5xl mb-3">👩🏻‍🏫</div>
-            <h2 className="text-xl font-extrabold text-indigo-950 mb-1">
-              Akun Pendamping & Sekolah
-            </h2>
-            <p className="text-sm text-slate-500 mb-6">
-              Saat ini aplikasi berjalan dalam mode penyimpanan lokal perangkat. Pada tahap berikutnya, menu ini dapat dihubungkan dengan Firebase Authentication untuk sinkronisasi akun guru dan orang tua.
-            </p>
-            <button
-              onClick={() => setHalamanAktif('monitoring')}
-              className="bg-teal-600 hover:bg-teal-700 text-white font-bold px-6 py-3 rounded-xl cursor-pointer"
-            >
-              Lihat Dasbor Monitoring
-            </button>
-          </div>
-        </main>
+        <HalamanAkun
+          akunAktif={akunAktif}
+          onLogin={(dataAkun) => setAkunAktif(dataAkun)}
+          onLogout={() => setAkunAktif(null)}
+          onMulaiSkrining={() => setHalamanAktif('observasi')}
+          onBukaMonitoring={() => setHalamanAktif('monitoring')}
+        />
       )}
 
       {/* KONDISI 7: HALAMAN BERANDA UTAMA */}
@@ -426,10 +469,10 @@ function App() {
                 </button>
 
                 <button
-                  onClick={() => setHalamanAktif('informasi')}
+                  onClick={() => setHalamanAktif('akun')}
                   className="bg-white hover:bg-teal-50 text-teal-700 border-2 border-teal-500 font-bold px-7 py-3.5 rounded-xl transition cursor-pointer flex items-center gap-2"
                 >
-                  <span>📖</span> Pelajari Instrumen
+                  <span>👤</span> {akunAktif ? 'Profil Pendamping' : 'Masuk Guru / Ortu'}
                 </button>
               </div>
             </div>
@@ -437,7 +480,7 @@ function App() {
             <div className="bg-white/80 border-2 border-sky-100 rounded-3xl p-8 shadow-sm text-center relative">
               <div className="text-7xl mb-3">👦🏻💻</div>
               <p className="text-sm font-semibold text-slate-500">
-                Area Ilustrasi Karakter Anak & Elemen Multisensori
+                Area Ilustrasi Karakter Anak & Elemen Multisensori KataKita
               </p>
               <div className="flex justify-center gap-3 mt-4 text-2xl">
                 <span className="bg-amber-100 px-3 py-1 rounded-lg">👂</span>

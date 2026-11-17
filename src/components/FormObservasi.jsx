@@ -42,16 +42,16 @@ const pertanyaanOrangTua = [
   { kategori: 'Kemungkinan Penyebab', teks: 'Anak saya pernah mengalami benturan di kepala yang cukup keras saat bayi' },
 ];
 
-export default function FormObservasi({ onKembali, onSelesai }) {
+export default function FormObservasi({ akunAktif, onKembali, onSelesai }) {
   const hariIni = new Date().toISOString().split('T')[0];
 
   const [identitas, setIdentitas] = useState({
     tanggal: hariIni,
     namaSiswa: '',
     kelas: '3 SD',
-    asalSekolah: '',
-    peran: 'guru',
-    namaPengisi: '',
+    asalSekolah: akunAktif?.asalSekolah || '',
+    peran: akunAktif?.peran || 'guru',
+    namaPengisi: akunAktif?.nama || '',
   });
 
   const [jawaban, setJawaban] = useState({});

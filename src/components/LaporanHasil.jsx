@@ -219,7 +219,7 @@ export default function LaporanHasil({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/20 pb-5 mb-5">
           <div>
             <span className="bg-white/20 text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full">
-              Laporan Hasil Skrining Dini LexScreen
+              Laporan Hasil Skrining Dini KataKita
             </span>
             <h1 className="text-2xl md:text-3xl font-extrabold mt-2">
               {dataSesi.identitas.namaSiswa}
@@ -375,7 +375,7 @@ export default function LaporanHasil({
 
       {/* DISCLAIMER ETIKA ASESMEN */}
       <p className="text-xs text-slate-500 text-center bg-white p-4 rounded-2xl border border-slate-200">
-        <strong>Catatan Penting:</strong> Instrumen LexScreen berfungsi sebagai media skrining deteksi dini untuk membantu perencanaan intervensi pembelajaran, bukan sebagai alat diagnosis klinis final.
+        <strong>Catatan Penting:</strong> Instrumen KataKita berfungsi sebagai media skrining deteksi dini untuk membantu perencanaan intervensi pembelajaran, bukan sebagai alat diagnosis klinis final.
       </p>
     </div>
   );
