@@ -251,17 +251,21 @@ function App() {
       {/* NAVBAR */}
       <nav className="print:hidden max-w-6xl mx-auto px-6 py-5 flex flex-wrap items-center justify-between gap-4 relative">
         <div
-          onClick={() => {
-            setHalamanAktif('beranda');
-            setGameAktif(null);
-          }}
-          className="flex items-center gap-2 cursor-pointer"
-        >
-          <span className="text-3xl">🧠</span>
-          <span className="text-2xl font-extrabold tracking-tight text-teal-600">
-            Kata<span className="text-indigo-950">Kita</span>
-          </span>
-        </div>
+       onClick={() => {
+         setHalamanAktif('beranda');
+         setGameAktif(null);
+       }}
+       className="flex items-center gap-2.5 cursor-pointer"
+     >
+       <img
+         src="/logo-katakita.png"
+         alt="Logo KataKita"
+         className="h-12 w-auto object-contain mix-blend-multiply"
+       />
+       <span className="text-2xl font-extrabold tracking-tight text-teal-600">
+         Kata<span className="text-indigo-950">Kita</span>
+       </span>
+     </div>
 
         <ul className="flex flex-wrap items-center gap-4 md:gap-6 font-semibold text-indigo-950 text-sm md:text-base">
           {['Beranda', 'Latihan', 'Informasi', 'Monitoring', 'Laporan'].map((menu) => (
