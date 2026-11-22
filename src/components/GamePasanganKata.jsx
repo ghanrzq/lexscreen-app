@@ -1,252 +1,184 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { IlustrasiObjek } from './IlustrasiKataKita';
 
-const daftarSoalPasangan = [
+const bankSoalPasangan = [
   {
-    kata: 'bola',
-    suku1: 'bo',
-    suku2: 'la',
-    opsiPotongan: ['bo', 'do', 'la', 'ra'],
-    ikon: '⚽',
+    target: 'meja',
+    sukuKata: ['me', 'ja'],
+    opsiGambar: ['meja', 'kursi', 'buku'],
   },
   {
-    kata: 'buku',
-    suku1: 'bu',
-    suku2: 'ku',
-    opsiPotongan: ['du', 'bu', 'ku', 'pu'],
-    ikon: '📘',
+    target: 'bola',
+    sukuKata: ['bo', 'la'],
+    opsiGambar: ['apel', 'bola', 'topi'],
   },
   {
-    kata: 'roti',
-    suku1: 'ro',
-    suku2: 'ti',
-    opsiPotongan: ['ro', 'lo', 'ti', 'di'],
-    ikon: '🍞',
+    target: 'buku',
+    sukuKata: ['bu', 'ku'],
+    opsiGambar: ['rumah', 'meja', 'buku'],
   },
   {
-    kata: 'topi',
-    suku1: 'to',
-    suku2: 'pi',
-    opsiPotongan: ['po', 'to', 'pi', 'bi'],
-    ikon: '🧢',
+    target: 'ikan',
+    sukuKata: ['i', 'kan'],
+    opsiGambar: ['ikan', 'bola', 'kursi'],
   },
   {
-    kata: 'ikan',
-    suku1: 'i',
-    suku2: 'kan',
-    opsiPotongan: ['i', 'e', 'kan', 'kam'],
-    ikon: '🐟',
+    target: 'rumah',
+    sukuKata: ['ru', 'mah'],
+    opsiGambar: ['topi', 'rumah', 'apel'],
   },
   {
-    kata: 'rumah',
-    suku1: 'ru',
-    suku2: 'mah',
-    opsiPotongan: ['ru', 'lu', 'mah', 'nah'],
-    ikon: '🏠',
+    target: 'topi',
+    sukuKata: ['to', 'pi'],
+    opsiGambar: ['kursi', 'ikan', 'topi'],
   },
 ];
 
 export default function GamePasanganKata({ onSelesai, onBatal }) {
   const [indeksSoal, setIndeksSoal] = useState(0);
-  const [waktuMulai, setWaktuMulai] = useState(Date.now());
-  const [riwayat, setRiwayat] = useState([]);
-  const [pilihanSlot, setPilihanSlot] = useState([null, null]);
-  const [statusJawaban, setStatusJawaban] = useState(null); // 'benar' | 'salah' | null
+  const [pilihanDipilih, setPilihanDipilih] = useState(null);
+  const [riwayatJawaban, setRiwayatJawaban] = useState([]);
+  const waktuMulaiRef = useRef(Date.now());
 
-  const soalAktif = daftarSoalPasangan[indeksSoal];
+  const soalAktif = bankSoalPasangan[indeksSoal];
 
-  const putarSuara = (kata) => {
+  useEffect(() => {
+    waktuMulaiRef.current = Date.now();
+    setPilihanDipilih(null);
+  }, [indeksSoal]);
+
+  const bunyikanKata = (kata) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const ucapan = new SpeechSynthesisUtterance(
-        `Pasangkan dua suku kata untuk gambar, ${kata}`
-      );
+      const ucapan = new SpeechSynthesisUtterance(kata);
       ucapan.lang = 'id-ID';
       ucapan.rate = 0.85;
       window.speechSynthesis.speak(ucapan);
     }
   };
 
-  useEffect(() => {
-    setPilihanSlot([null, null]);
-    setStatusJawaban(null);
-    setWaktuMulai(Date.now());
+  const handlePilihGambar = (namaGambar) => {
+    if (pilihanDipilih !== null) return;
 
-    const jeda = setTimeout(() => {
-      putarSuara(daftarSoalPasangan[indeksSoal].kata);
-    }, 250);
+    const waktuDetik = Number(
+      ((Date.now() - waktuMulaiRef.current) / 1000).toFixed(2)
+    );
+    const benar = namaGambar === soalAktif.target;
 
-    return () => {
-      clearTimeout(jeda);
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, [indeksSoal]);
-
-  const handlePilihPotongan = (indeksOpsi, teks) => {
-    if (statusJawaban !== null) return;
-
-    // Cegah kartu potongan yang sama dipilih dua kali
-    if (pilihanSlot.some((item) => item && item.indeksOpsi === indeksOpsi)) return;
-
-    const slotBaru = [...pilihanSlot];
-    if (slotBaru[0] === null) {
-      slotBaru[0] = { indeksOpsi, teks };
-      setPilihanSlot(slotBaru);
-    } else if (slotBaru[1] === null) {
-      slotBaru[1] = { indeksOpsi, teks };
-      setPilihanSlot(slotBaru);
-      evaluasiPasangan(slotBaru);
-    }
-  };
-
-  const handleResetSlot = (posisi) => {
-    if (statusJawaban !== null) return;
-    const slotBaru = [...pilihanSlot];
-    slotBaru[posisi] = null;
-    setPilihanSlot(slotBaru);
-  };
-
-  const evaluasiPasangan = (slotLengkap) => {
-    const waktuSelesai = Date.now();
-    const durasiDetik = Number(((waktuSelesai - waktuMulai) / 1000).toFixed(2));
-    const kataGabungan = `${slotLengkap[0].teks}${slotLengkap[1].teks}`;
-    const apakahBenar = kataGabungan === soalAktif.kata;
-
-    setStatusJawaban(apakahBenar ? 'benar' : 'salah');
+    setPilihanDipilih(namaGambar);
 
     const catatanBaru = [
-      ...riwayat,
+      ...riwayatJawaban,
       {
-        ronde: indeksSoal + 1,
-        target: soalAktif.kata,
-        jawaban: kataGabungan,
-        benar: apakahBenar,
-        waktuDetik: durasiDetik,
+        target: soalAktif.target,
+        jawaban: namaGambar,
+        benar,
+        waktuDetik,
       },
     ];
-    setRiwayat(catatanBaru);
+    setRiwayatJawaban(catatanBaru);
 
     setTimeout(() => {
-      if (indeksSoal + 1 < daftarSoalPasangan.length) {
+      if (indeksSoal + 1 < bankSoalPasangan.length) {
         setIndeksSoal(indeksSoal + 1);
       } else {
         const jumlahBenar = catatanBaru.filter((item) => item.benar).length;
-        const totalWaktu = catatanBaru.reduce((acc, item) => acc + item.waktuDetik, 0);
-        const rataRataWaktu = Number((totalWaktu / daftarSoalPasangan.length).toFixed(2));
-        const persentaseAkurasi = Math.round(
-          (jumlahBenar / daftarSoalPasangan.length) * 100
+        const totalSoal = bankSoalPasangan.length;
+        const akurasi = Math.round((jumlahBenar / totalSoal) * 100);
+        const rataRataWaktu = Number(
+          (
+            catatanBaru.reduce((acc, item) => acc + item.waktuDetik, 0) / totalSoal
+          ).toFixed(2)
         );
 
         onSelesai({
           idGame: 'pasangan-kata',
           namaGame: 'Pasangan Kata',
-          jumlahBenar,
-          totalSoal: daftarSoalPasangan.length,
-          akurasi: persentaseAkurasi,
+          akurasi,
           rataRataWaktu,
+          jumlahBenar,
+          totalSoal,
           detail: catatanBaru,
         });
       }
-    }, 750);
+    }, 950);
   };
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <button
+          type="button"
           onClick={onBatal}
-          className="text-slate-600 hover:text-indigo-950 font-bold text-sm cursor-pointer"
+          className="text-slate-500 hover:text-indigo-950 font-bold text-sm cursor-pointer"
         >
-          ← Keluar dari Permainan
+          ← Keluar Permainan
         </button>
-        <span className="bg-orange-100 text-orange-900 text-xs font-extrabold px-4 py-1.5 rounded-full">
-          Soal {indeksSoal + 1} dari {daftarSoalPasangan.length}
+        <span className="bg-orange-100 text-orange-900 text-xs font-extrabold px-3.5 py-1.5 rounded-full">
+          Soal {indeksSoal + 1} dari {bankSoalPasangan.length}
         </span>
       </div>
 
-      {/* Bilah Progres */}
-      <div className="w-full bg-slate-200 h-3 rounded-full mb-8 overflow-hidden">
-        <div
-          className="bg-orange-500 h-full transition-all duration-300"
-          style={{
-            width: `${((indeksSoal + 1) / daftarSoalPasangan.length) * 100}%`,
-          }}
-        />
-      </div>
-
-      <div className="bg-white rounded-3xl shadow-lg border-2 border-orange-100 p-8 text-center">
-        <h2 className="text-xl md:text-2xl font-extrabold text-indigo-950 mb-2">
-          🧩 Pasangkan Suku Kata!
+      <div className="bg-white rounded-3xl p-6 md:p-8 border-2 border-orange-100 shadow-md text-center">
+        <span className="text-xs font-extrabold uppercase tracking-wider text-orange-700">
+          🧩 Pasangan Kata & Ilustrasi Presisi
+        </span>
+        <h2 className="text-lg md:text-xl font-extrabold text-indigo-950 mt-1 mb-6">
+          Pilih gambar yang sesuai dengan kata di bawah ini:
         </h2>
-        <p className="text-sm text-slate-500 mb-6">
-          Pilih 2 kepingan suku kata di bawah untuk menyusun nama gambar ini.
-        </p>
 
-        {/* Gambar Target */}
-        <div className="inline-flex flex-col items-center bg-orange-50/70 border border-orange-200 rounded-2xl px-10 py-5 mb-8">
-          <span className="text-7xl mb-3">{soalAktif.ikon}</span>
+        {/* Kartu Kata Berwarna per Suku Kata */}
+        <div className="inline-flex items-center gap-3 bg-orange-50 border-2 border-orange-200 px-8 py-4 rounded-2xl mb-8">
+          <div className="text-3xl md:text-4xl font-extrabold tracking-wide">
+            {soalAktif.sukuKata.map((suku, idx) => (
+              <span
+                key={idx}
+                className={idx % 2 === 0 ? 'text-indigo-950' : 'text-teal-700'}
+              >
+                {suku}
+              </span>
+            ))}
+          </div>
           <button
             type="button"
-            onClick={() => putarSuara(soalAktif.kata)}
-            className="text-xs font-bold bg-orange-200 hover:bg-orange-300 text-orange-950 px-4 py-1.5 rounded-full transition cursor-pointer flex items-center gap-1.5"
+            onClick={() => bunyikanKata(soalAktif.target)}
+            title="Dengarkan kata"
+            className="w-10 h-10 rounded-full bg-amber-400 hover:bg-amber-500 text-indigo-950 flex items-center justify-center text-lg shadow-xs cursor-pointer"
           >
-            <span>🔊</span> Dengar Nama Gambar
+            🔊
           </button>
         </div>
 
-        {/* Dua Kepingan Puzzle Suku Kata (Sesuai ilustrasi me | ja di UI) */}
-        <div className="flex items-center justify-center gap-2 mb-8">
-          {[0, 1].map((posisi) => {
-            const isi = pilihanSlot[posisi];
-            let gayaKeping =
-              'bg-slate-50 border-dashed border-orange-400 text-slate-400';
+        {/* 3 Pilihan Ilustrasi SVG Akurat */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {soalAktif.opsiGambar.map((namaObjek) => {
+            const dipilih = pilihanDipilih === namaObjek;
+            const benar = namaObjek === soalAktif.target;
 
-            if (isi) {
-              gayaKeping =
-                'bg-amber-100 border-solid border-orange-500 text-indigo-950 shadow-sm';
-            }
-            if (statusJawaban === 'benar') {
-              gayaKeping =
-                'bg-emerald-500 border-solid border-emerald-600 text-white scale-105';
-            } else if (statusJawaban === 'salah') {
-              gayaKeping =
-                'bg-amber-400 border-solid border-amber-500 text-white';
+            let gayaKartu =
+              'bg-slate-50/70 border-slate-200 hover:border-orange-400 hover:bg-orange-50/40';
+            if (pilihanDipilih !== null) {
+              if (benar) {
+                gayaKartu = 'bg-emerald-50 border-emerald-500 ring-2 ring-emerald-300';
+              } else if (dipilih && !benar) {
+                gayaKartu = 'bg-rose-50 border-rose-400';
+              }
             }
 
             return (
               <button
-                key={posisi}
+                key={namaObjek}
                 type="button"
-                onClick={() => handleResetSlot(posisi)}
-                className={`${gayaKeping} w-28 h-20 rounded-2xl border-3 text-3xl font-extrabold flex items-center justify-center transition transform cursor-pointer select-none`}
+                disabled={pilihanDipilih !== null}
+                onClick={() => handlePilihGambar(namaObjek)}
+                className={`p-6 rounded-2xl border-2 transition flex flex-col items-center justify-center gap-2 cursor-pointer ${gayaKartu}`}
               >
-                {isi ? isi.teks : posisi === 0 ? 'Awal' : 'Akhir'}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Pilihan Potongan Suku Kata */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto">
-          {soalAktif.opsiPotongan.map((potongan, idx) => {
-            const sudahDipakai = pilihanSlot.some(
-              (item) => item && item.indeksOpsi === idx
-            );
-
-            return (
-              <button
-                key={idx}
-                type="button"
-                disabled={sudahDipakai}
-                onClick={() => handlePilihPotongan(idx, potongan)}
-                className={`py-4 px-5 rounded-2xl text-2xl font-extrabold border-2 transition transform select-none ${
-                  sudahDipakai
-                    ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed scale-95'
-                    : 'bg-orange-400 hover:bg-orange-500 border-orange-500 text-white shadow-md hover:-translate-y-1 cursor-pointer'
-                }`}
-              >
-                {potongan}
+                <IlustrasiObjek nama={namaObjek} className="w-24 h-24" />
+                {pilihanDipilih !== null && benar && (
+                  <span className="text-xs font-extrabold text-emerald-700">
+                    ✅ Tepat!
+                  </span>
+                )}
               </button>
             );
           })}
